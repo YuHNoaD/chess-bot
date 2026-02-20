@@ -42,3 +42,4 @@ Thumbs.db
 
 # Config
 .env
+config_account.py

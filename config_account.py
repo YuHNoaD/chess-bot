@@ -3,8 +3,8 @@ Account Automation Configuration
 """
 
 # Chess.com Account Credentials
-CHESSCOM_USERNAME = "your_username"  # Tên đăng nhập chess.com của bạn
-CHESSCOM_PASSWORD = "your_password"  # Mật khẩu chess.com của bạn
+CHESSCOM_USERNAME = "YuHNoaD"  # Tên đăng nhập chess.com của bạn
+CHESSCOM_PASSWORD = "YuHNoaD06@"  # Mật khẩu chess.com của bạn
 
 # Automation Settings
 AUTO_ACCEPT_CHALLENGES = True  # Tự động chấp nhận challenges

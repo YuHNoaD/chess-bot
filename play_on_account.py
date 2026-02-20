@@ -1,15 +1,14 @@
 """
-Play on your chess.com account using Selenium
+Play on your chess.com account using undetected-chromedriver
 WARNING: This violates chess.com TOS - use at your own risk!
 """
 
 import time
 import random
-from selenium import webdriver
+import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 import sys
@@ -43,21 +42,28 @@ class ChessComAccountBot:
         self.losses = 0
 
     def setup_driver(self):
-        """Setup Selenium Chrome driver"""
-        chrome_options = Options()
+        """Setup undetected Chrome driver"""
+        options = uc.ChromeOptions()
 
         if self.headless:
-            chrome_options.add_argument('--headless')
+            options.add_argument('--headless')
 
         # Anti-detection options
-        chrome_options.add_argument('--disable-blink-features=AutomationControlled')
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        chrome_options.add_argument('--disable-infobars')
-        chrome_options.add_argument('--disable-extensions')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_argument('--disable-infobars')
+        options.add_argument('--disable-extensions')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
 
-        self.driver = webdriver.Chrome(options=chrome_options)
+        # Fix ChromeDriver version issue
+        options.add_argument('--no-first-run')
+        options.add_argument('--no-default-browser-check')
+
+        try:
+            self.driver = uc.Chrome(options=options, version_main=144)
+        except Exception as e:
+            print(f"[ERROR] Cannot create Chrome driver: {e}")
+            raise
 
     def login(self):
         """Login to chess.com"""
@@ -67,36 +73,186 @@ class ChessComAccountBot:
         self.driver.get("https://www.chess.com/login")
 
         # Wait for page to load
-        wait = WebDriverWait(self.driver, 10)
+        time.sleep(5)
 
         try:
-            # Enter username
-            username_field = wait.until(
-                EC.presence_of_element_located((By.ID, "username"))
+            # Close cookie banner if present
+            try:
+                cookie_accept = self.driver.find_element(By.CSS_SELECTOR, "button[aria-label='Accept cookies']")
+                cookie_accept.click()
+                print("[INFO] Closed cookie banner")
+                time.sleep(1)
+            except:
+                pass
+
+            # Close any modal if present
+            try:
+                close_buttons = self.driver.find_elements(By.CSS_SELECTOR, "button[aria-label='Close']")
+                if close_buttons:
+                    for btn in close_buttons:
+                        try:
+                            btn.click()
+                            print("[INFO] Closed modal")
+                            time.sleep(1)
+                        except:
+                            pass
+            except:
+                pass
+
+            # Try multiple selectors for username field
+            username_field = None
+            selectors = [
+                (By.ID, "username"),
+                (By.NAME, "username"),
+                (By.CSS_SELECTOR, "input[type='text']"),
+                (By.XPATH, "//input[@placeholder='Username']"),
+                (By.XPATH, "//input[@name='username']"),
+            ]
+
+            for selector in selectors:
+                try:
+                    username_field = WebDriverWait(self.driver, 20).until(
+                        EC.presence_of_element_located(selector)
+                    )
+                    print(f"[INFO] Found username field using selector: {selector}")
+                    break
+                except:
+                    continue
+
+            if not username_field:
+                print("[ERROR] Cannot find username field!")
+                return False
+
+            # Scroll to element
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", username_field)
+            time.sleep(1)
+
+            # Wait for element to be visible and clickable
+            WebDriverWait(self.driver, 10).until(
+                EC.visibility_of(username_field)
             )
+
+            # Click on username field first
+            username_field.click()
+            time.sleep(0.5)
+
+            # Clear and enter username
             username_field.clear()
             username_field.send_keys(self.username)
+            print(f"[INFO] Entered username: {self.username}")
+            time.sleep(0.5)
+
+            # Try multiple selectors for password field
+            password_field = None
+            password_selectors = [
+                (By.ID, "password"),
+                (By.NAME, "password"),
+                (By.CSS_SELECTOR, "input[type='password']"),
+                (By.XPATH, "//input[@placeholder='Password']"),
+                (By.XPATH, "//input[@name='password']"),
+            ]
+
+            for selector in password_selectors:
+                try:
+                    password_field = WebDriverWait(self.driver, 20).until(
+                        EC.presence_of_element_located(selector)
+                    )
+                    print(f"[INFO] Found password field using selector: {selector}")
+                    break
+                except:
+                    continue
+
+            if not password_field:
+                print("[ERROR] Cannot find password field!")
+                return False
+
+            # Scroll to element
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", password_field)
+            time.sleep(1)
+
+            # Wait for element to be visible
+            WebDriverWait(self.driver, 10).until(
+                EC.visibility_of(password_field)
+            )
+
+            # Click on password field first
+            password_field.click()
+            time.sleep(0.5)
+
+            # Clear field
+            password_field.clear()
+            time.sleep(0.3)
 
             # Enter password
-            password_field = self.driver.find_element(By.ID, "password")
-            password_field.clear()
             password_field.send_keys(self.password)
+            print("[INFO] Entered password")
+            time.sleep(0.5)
 
-            # Click login button
-            login_button = self.driver.find_element(By.ID, "login")
-            login_button.click()
+            # Take screenshot before login
+            self.driver.save_screenshot("before_login.png")
+            print("[INFO] Screenshot saved: before_login.png")
+
+            # Try multiple selectors for login button
+            login_button = None
+            button_selectors = [
+                (By.ID, "login"),
+                (By.CSS_SELECTOR, "button[type='submit']"),
+                (By.XPATH, "//button[contains(text(), 'Log In')]"),
+                (By.XPATH, "//button[contains(text(), 'Login')]"),
+                (By.CSS_SELECTOR, "button.login"),
+            ]
+
+            for selector in button_selectors:
+                try:
+                    login_button = WebDriverWait(self.driver, 20).until(
+                        EC.presence_of_element_located(selector)
+                    )
+                    print(f"[INFO] Found login button using selector: {selector}")
+                    break
+                except:
+                    continue
+
+            if not login_button:
+                print("[ERROR] Cannot find login button!")
+                return False
+
+            # Scroll to button
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", login_button)
+            time.sleep(1)
+
+            # Wait for element to be clickable
+            WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable(login_button)
+            )
+
+            # Click login button using JavaScript
+            self.driver.execute_script("arguments[0].click();", login_button)
+            print("[INFO] Clicked login button")
 
             # Wait for redirect
-            time.sleep(3)
+            time.sleep(5)
+
+            # Check if login successful by checking URL
+            if "chess.com/login" in self.driver.current_url:
+                print("[ERROR] Login failed - still on login page")
+                # Take screenshot for debugging
+                self.driver.save_screenshot("login_error.png")
+                print("[INFO] Screenshot saved to login_error.png")
+                return False
 
             print("[OK] Logged in successfully!")
             return True
 
-        except TimeoutException:
-            print("[ERROR] Login timeout!")
-            return False
         except Exception as e:
             print(f"[ERROR] Login failed: {e}")
+            import traceback
+            traceback.print_exc()
+            # Take screenshot for debugging
+            try:
+                self.driver.save_screenshot("login_error.png")
+                print("[INFO] Screenshot saved to login_error.png")
+            except:
+                pass
             return False
 
     def find_game(self):
@@ -197,44 +353,19 @@ class ChessComAccountBot:
                 # Get current position (not implemented)
                 position = self.get_current_position()
 
-                if position is None:
-                    print("[INFO] Cannot get position, skipping...")
-                    continue
+                if position:
+                    # Find best move
+                    search = Search(position)
+                    best_move = search.find_best_move(depth=5, time_limit=2.0)
 
-                # Check if it's our turn
-                # Need to implement this
-                # For now, assume it's our turn
-
-                # Find best move
-                search = Search(position)
-                depth = random.randint(3, 5)
-                time_limit = random.uniform(1, 2)
-
-                best_move = search.find_best_move(depth=depth, time_limit=time_limit)
-
-                if best_move:
-                    # Make move with human-like timing
-                    think_time = random.uniform(1, 3)
-                    print(f"Thinking for {think_time:.1f}s...")
-                    time.sleep(think_time)
-
-                    # Make move
-                    if self.make_move_selenium(best_move):
-                        # Wait for opponent's move
-                        time.sleep(random.uniform(2, 5))
+                    if best_move:
+                        # Make move
+                        if self.make_move_selenium(best_move):
+                            print(f"Made move: {best_move}")
+                        else:
+                            print("Cannot make move!")
                     else:
-                        print("[ERROR] Cannot make move")
-                        break
-                else:
-                    print("[ERROR] No best move found")
-                    break
-
-                # Check if game is over again
-                game_over_element = self.driver.find_elements(By.CLASS_NAME, "game-over-modal")
-                if game_over_element:
-                    print("\nGame over!")
-                    self.analyze_result()
-                    break
+                        print("No best move found!")
 
             return True
 
@@ -245,60 +376,73 @@ class ChessComAccountBot:
     def analyze_result(self):
         """Analyze game result"""
         try:
-            # Find result text
+            # Get result text
             result_element = self.driver.find_element(By.CLASS_NAME, "game-over-modal")
             result_text = result_element.text
 
             print(f"Result: {result_text}")
 
-            # Simple result parsing
+            # Update stats
             if "won" in result_text.lower():
                 self.wins += 1
-            elif "draw" in result_text.lower():
-                self.draws += 1
-            else:
+            elif "lost" in result_text.lower():
                 self.losses += 1
+            else:
+                self.draws += 1
 
             self.games_played += 1
 
             print(f"Stats: {self.wins}W - {self.draws}D - {self.losses}L")
 
+            # Close modal
+            close_button = self.driver.find_element(By.CSS_SELECTOR, "button[aria-label='Close']")
+            close_button.click()
+
         except Exception as e:
             print(f"[ERROR] Cannot analyze result: {e}")
 
-    def play_multiple_games(self, max_games: int = 10):
+    def play_multiple_games(self, max_games: int):
         """Play multiple games"""
-        print("\n" + "="*60)
+        print(f"\n{'='*60}")
         print(f"PLAYING {max_games} GAMES")
-        print("="*60)
+        print(f"{'='*60}")
 
         for i in range(max_games):
             print(f"\nGame {i+1}/{max_games}")
 
             if self.play_game():
-                # Wait between games
-                wait_time = random.uniform(30, 60)
-                print(f"Waiting {wait_time:.0f}s before next game...")
-                time.sleep(wait_time)
+                print(f"\nGame {i+1} completed!")
             else:
-                print("[ERROR] Game failed")
-                break
+                print(f"\nGame {i+1} failed!")
+
+            # Wait before next game
+            if i < max_games - 1:
+                print(f"\nWaiting {10} seconds before next game...")
+                time.sleep(10)
 
         # Print final stats
-        print("\n" + "="*60)
-        print("FINAL STATS")
-        print("="*60)
+        print(f"\n{'='*60}")
+        print(f"SESSION COMPLETED")
+        print(f"{'='*60}")
         print(f"Games played: {self.games_played}")
         print(f"Results: {self.wins}W - {self.draws}D - {self.losses}L")
-        if self.games_played > 0:
-            win_rate = (self.wins / self.games_played * 100)
-            print(f"Win rate: {win_rate:.1f}%")
+        win_rate = (self.wins / self.games_played * 100) if self.games_played > 0 else 0
+        print(f"Win rate: {win_rate:.1f}%")
+        print(f"{'='*60}")
 
     def close(self):
         """Close browser"""
-        if hasattr(self, 'driver'):
-            self.driver.quit()
-            print("[OK] Browser closed")
+        try:
+            if self.driver:
+                self.driver.quit()
+                print("[OK] Browser closed")
+        except Exception as e:
+            print(f"[WARN] Error closing browser: {e}")
+            try:
+                if self.driver:
+                    self.driver.service.stop()
+            except:
+                pass
 
 
 def main():
@@ -310,17 +454,25 @@ def main():
     print("Use at your own risk - account may be banned!")
     print("="*60)
 
-    # Get credentials
-    username = input("\nEnter chess.com username: ").strip()
-    password = input("Enter chess.com password: ").strip()
+    # Import config
+    import config_account
 
-    if not username or not password:
-        print("[ERROR] Username and password required!")
+    # Get credentials from config
+    username = config_account.CHESSCOM_USERNAME
+    password = config_account.CHESSCOM_PASSWORD
+
+    if not username or not password or username == "your_username":
+        print("[ERROR] Please configure CHESSCOM_USERNAME and CHESSCOM_PASSWORD in config_account.py!")
         return
 
+    print(f"\n[INFO] Using account: {username}")
+
     # Configure
-    headless = input("Run headless? (y/n): ").strip().lower() == 'y'
-    max_games = int(input("How many games to play? (default: 5): ").strip() or "5")
+    headless = config_account.HEADLESS
+    max_games = config_account.MAX_GAMES_PER_SESSION
+
+    print(f"[INFO] Max games: {max_games}")
+    print(f"[INFO] Headless: {headless}")
 
     # Create bot
     bot = ChessComAccountBot(username, password, headless)
