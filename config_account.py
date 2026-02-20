@@ -15,8 +15,8 @@ CHESSCOM_PASSWORD = "YuHNoaD06@"  # Mật khẩu chess.com của bạn
 # 4. Copy đường dẫn (thường là: C:\Users\<username>\AppData\Local\Google\Chrome\User Data)
 # 5. Tên profile (thường là: Default, Profile 1, Profile 2, v.v.)
 
-CHROME_USER_DATA_DIR = r"C:\Users\dhuy8\AppData\Local\Google\Chrome\User Data"  # Đường dẫn Chrome User Data
-CHROME_PROFILE_DIRECTORY = "Default"  # Tên profile (Default, Profile 1, Profile 2, v.v.)
+CHROME_USER_DATA_DIR = ""  # Đường dẫn Chrome User Data
+CHROME_PROFILE_DIRECTORY = ""  # Tên profile (Default, Profile 1, Profile 2, v.v.)
 
 # Lưu ý:
 # - Nếu để trống CHROME_USER_DATA_DIR và CHROME_PROFILE_DIRECTORY, sẽ sử dụng profile mặc định mới

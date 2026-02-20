@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.position import Position
 from src.search import Search
-from src.evaluator import Evaluator
-from src.movegen import MoveGenerator
+from src.evaluation.evaluation import Evaluator
+from src.movegen.movegen import MoveGenerator
 from src.type_defs.chess_types import Color, Square, Move
 
 # Import config
@@ -109,31 +109,58 @@ class ChessComAccountBot:
         self.driver.get("https://www.chess.com/login")
 
         # Wait for page to load
-        time.sleep(5)
+        time.sleep(10)
 
+        # Close cookie banner if present
         try:
-            # Close cookie banner if present
-            try:
-                cookie_accept = self.driver.find_element(By.CSS_SELECTOR, "button[aria-label='Accept cookies']")
-                cookie_accept.click()
-                print("[INFO] Closed cookie banner")
-                time.sleep(1)
-            except:
-                pass
+            cookie_accept = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "button[aria-label='Accept cookies']"))
+            )
+            cookie_accept.click()
+            print("[INFO] Closed cookie banner")
+            time.sleep(2)
+        except:
+            pass
 
-            # Close any modal if present
+        # Close any modal if present - try multiple selectors
+        print("[INFO] Closing modals...")
+        modal_selectors = [
+            "button[aria-label='Close']",
+            "button.close",
+            ".modal-close",
+            ".close-button",
+            "[data-cy='close']",
+        ]
+
+        for selector in modal_selectors:
             try:
-                close_buttons = self.driver.find_elements(By.CSS_SELECTOR, "button[aria-label='Close']")
+                close_buttons = self.driver.find_elements(By.CSS_SELECTOR, selector)
                 if close_buttons:
                     for btn in close_buttons:
                         try:
                             btn.click()
-                            print("[INFO] Closed modal")
+                            print(f"[INFO] Closed modal with selector: {selector}")
                             time.sleep(1)
                         except:
                             pass
             except:
                 pass
+
+        # Try to press ESC to close modals
+        try:
+            from selenium.webdriver.common.keys import Keys
+            self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+            print("[INFO] Pressed ESC to close modals")
+            time.sleep(2)
+        except:
+            pass
+
+        # Take screenshot after closing modals
+        self.driver.save_screenshot("after_closing_modals.png")
+        print("[INFO] Screenshot saved: after_closing_modals.png")
+
+        # Wait a bit more for everything to settle
+        time.sleep(3)
 
             # Try multiple selectors for username field
             username_field = None
@@ -190,8 +217,9 @@ class ChessComAccountBot:
 
             for selector in password_selectors:
                 try:
-                    password_field = WebDriverWait(self.driver, 20).until(
-                        EC.presence_of_element_located(selector)
+                    # Wait for presence AND visibility
+                    password_field = WebDriverWait(self.driver, 30).until(
+                        lambda d: d.find_element(*selector).is_displayed() and d.find_element(*selector)
                     )
                     print(f"[INFO] Found password field using selector: {selector}")
                     break
@@ -200,6 +228,8 @@ class ChessComAccountBot:
 
             if not password_field:
                 print("[ERROR] Cannot find password field!")
+                print("[INFO] Taking screenshot for debugging...")
+                self.driver.save_screenshot("password_field_not_found.png")
                 return False
 
             # Scroll to element
