@@ -6,7 +6,7 @@ Similar to Stockfish's position.{h,cpp}
 from typing import List, Optional, Dict, Tuple
 import copy
 
-from ..types.chess_types import Color, PieceType, Piece, Square, Move, MoveFlag
+from ..type_defs.chess_types import Color, PieceType, Piece, Square, Move, MoveFlag
 
 
 class Position:

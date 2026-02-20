@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Tuple
 import random
 
 from ..position import Position
-from ..types.chess_types import Color, Move, MoveFlag
+from ..type_defs.chess_types import Color, Move, MoveFlag
 from ..movegen import MoveGenerator
 from ..evaluation import Evaluator
 import config
@@ -280,8 +280,12 @@ class Search:
                 hash_val ^= hash(square)
 
         hash_val ^= hash(position.turn)
-        hash_val ^= hash(position.castling)
         hash_val ^= hash(position.en_passant)
+
+        # Hash castling rights
+        for color in [Color.WHITE, Color.BLACK]:
+            hash_val ^= hash(position.castling[color].get("king", False))
+            hash_val ^= hash(position.castling[color].get("queen", False))
 
         return hash_val
 

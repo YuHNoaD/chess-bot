@@ -5,7 +5,7 @@ Similar to Stockfish's evaluation.{h,cpp}
 
 from typing import Dict
 
-from ..types.chess_types import Color, PieceType, Piece, Square, PIECE_VALUES, PIECE_SQUARE_TABLES
+from ..type_defs.chess_types import Color, PieceType, Piece, Square, PIECE_VALUES, PIECE_SQUARE_TABLES
 from ..position import Position
 import config
 
