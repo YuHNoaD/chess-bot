@@ -93,6 +93,9 @@ class Evaluator:
 
         score = 0
 
+        # Save original turn
+        original_turn = position.turn
+
         # White mobility
         position.turn = Color.WHITE
         movegen_white = MoveGenerator(position)
@@ -104,6 +107,9 @@ class Evaluator:
         movegen_black = MoveGenerator(position)
         black_moves = len(movegen_black.generate_legal_moves())
         score -= black_moves
+
+        # Restore original turn
+        position.turn = original_turn
 
         return score
 
