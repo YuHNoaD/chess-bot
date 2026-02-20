@@ -9,7 +9,7 @@ import requests
 from typing import Optional, Dict
 
 from ..position import Position
-from ..types import Color, Square, Move, MoveFlag
+from ..types.chess_types import Color, Square, Move, MoveFlag
 from ..search import Search
 import config
 

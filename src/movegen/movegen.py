@@ -6,7 +6,7 @@ Similar to Stockfish's movegen.{h,cpp}
 from typing import List, Set, Tuple
 import itertools
 
-from ..types import Color, PieceType, Piece, Square, Move, MoveFlag
+from ..types.chess_types import Color, PieceType, Piece, Square, Move, MoveFlag
 from ..position import Position
 
 

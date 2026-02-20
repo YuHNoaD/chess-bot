@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Tuple
 import random
 
 from ..position import Position
-from ..types import Color, Move, MoveFlag
+from ..types.chess_types import Color, Move, MoveFlag
 from ..movegen import MoveGenerator
 from ..evaluation import Evaluator
 import config
