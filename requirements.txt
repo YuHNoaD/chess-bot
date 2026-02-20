@@ -1,0 +1,11 @@
+# Core dependencies
+chess>=1.999
+requests>=2.31.0
+
+# Optional dependencies for performance
+numpy>=1.24.0
+
+# Development dependencies
+pytest>=7.4.0
+black>=23.7.0
+mypy>=1.5.0
