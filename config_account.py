@@ -6,6 +6,25 @@ Account Automation Configuration
 CHESSCOM_USERNAME = "YuHNoaD"  # Tên đăng nhập chess.com của bạn
 CHESSCOM_PASSWORD = "YuHNoaD06@"  # Mật khẩu chess.com của bạn
 
+# Chrome Profile Configuration
+# Sử dụng Chrome profile đã có sẵn để không cần login lại mỗi lần
+# Để tìm đường dẫn Chrome profile:
+# 1. Mở Chrome
+# 2. Gõ chrome://version/ vào thanh địa chỉ
+# 3. Xem "Profile Path"
+# 4. Copy đường dẫn (thường là: C:\Users\<username>\AppData\Local\Google\Chrome\User Data)
+# 5. Tên profile (thường là: Default, Profile 1, Profile 2, v.v.)
+
+CHROME_USER_DATA_DIR = r"C:\Users\dhuy8\AppData\Local\Google\Chrome\User Data"  # Đường dẫn Chrome User Data
+CHROME_PROFILE_DIRECTORY = "Default"  # Tên profile (Default, Profile 1, Profile 2, v.v.)
+
+# Lưu ý:
+# - Nếu để trống CHROME_USER_DATA_DIR và CHROME_PROFILE_DIRECTORY, sẽ sử dụng profile mặc định mới
+# - Để sử dụng profile đã có, cần điền đầy đủ thông tin
+# - Profile "Default" là profile chính của Chrome
+# - Profile "Profile 1", "Profile 2" là các profile khác (nếu có)
+# - Để tránh lỗi, hãy đóng Chrome trước khi chạy bot
+
 # Automation Settings
 AUTO_ACCEPT_CHALLENGES = True  # Tự động chấp nhận challenges
 AUTO_CHALLENGE_PLAYERS = True  # Tự động thách đấu người chơi

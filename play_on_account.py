@@ -19,9 +19,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.position import Position
 from src.search import Search
-from src.evaluation import Evaluator
+from src.evaluator import Evaluator
 from src.movegen import MoveGenerator
 from src.type_defs.chess_types import Color, Square, Move
+
+# Import config
+import config_account
 
 
 class ChessComAccountBot:
@@ -48,6 +51,17 @@ class ChessComAccountBot:
         if self.headless:
             options.add_argument('--headless')
 
+        # Use existing Chrome profile
+        user_data_dir = config_account.CHROME_USER_DATA_DIR
+        profile_directory = config_account.CHROME_PROFILE_DIRECTORY
+
+        if user_data_dir and profile_directory:
+            print(f"[INFO] Using Chrome profile: {user_data_dir}\\{profile_directory}")
+            options.add_argument(f'--user-data-dir={user_data_dir}')
+            options.add_argument(f'--profile-directory={profile_directory}')
+        else:
+            print("[INFO] Using default Chrome profile")
+
         # Anti-detection options
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_argument('--disable-infobars')
@@ -66,8 +80,30 @@ class ChessComAccountBot:
             raise
 
     def login(self):
-        """Login to chess.com"""
-        print("Logging in to chess.com...")
+        """Login to chess.com (or check if already logged in)"""
+        print("Checking login status...")
+
+        # Go to chess.com homepage
+        self.driver.get("https://www.chess.com")
+
+        # Wait for page to load
+        time.sleep(5)
+
+        # Check if already logged in
+        try:
+            # Look for user menu or username in the page
+            user_menu = self.driver.find_elements(By.CSS_SELECTOR, "[data-cy='user-menu']")
+            username_element = self.driver.find_elements(By.CSS_SELECTOR, "[data-cy='user-username']")
+
+            if user_menu or username_element:
+                print("[OK] Already logged in!")
+                print(f"[INFO] Using existing Chrome profile with saved login")
+                return True
+        except:
+            pass
+
+        # If not logged in, try to login
+        print("Not logged in - attempting login...")
 
         # Go to login page
         self.driver.get("https://www.chess.com/login")
