@@ -17,10 +17,10 @@ import os
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from src.position import Position
-from src.search import Search
 from src.evaluation.evaluation import Evaluator
 from src.movegen.movegen import MoveGenerator
+from src.position import Position
+from src.search import Search
 from src.type_defs.chess_types import Color, Square, Move
 
 # Import config
@@ -111,56 +111,31 @@ class ChessComAccountBot:
         # Wait for page to load
         time.sleep(10)
 
-        # Close cookie banner if present
         try:
-            cookie_accept = WebDriverWait(self.driver, 5).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "button[aria-label='Accept cookies']"))
-            )
-            cookie_accept.click()
-            print("[INFO] Closed cookie banner")
-            time.sleep(2)
-        except:
-            pass
-
-        # Close any modal if present - try multiple selectors
-        print("[INFO] Closing modals...")
-        modal_selectors = [
-            "button[aria-label='Close']",
-            "button.close",
-            ".modal-close",
-            ".close-button",
-            "[data-cy='close']",
-        ]
-
-        for selector in modal_selectors:
+            # Close cookie banner if present
             try:
-                close_buttons = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                cookie_accept = WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "button[aria-label='Accept cookies']"))
+                )
+                cookie_accept.click()
+                print("[INFO] Closed cookie banner")
+                time.sleep(2)
+            except:
+                pass
+
+            # Close any modal if present
+            try:
+                close_buttons = self.driver.find_elements(By.CSS_SELECTOR, "button[aria-label='Close']")
                 if close_buttons:
                     for btn in close_buttons:
                         try:
                             btn.click()
-                            print(f"[INFO] Closed modal with selector: {selector}")
+                            print("[INFO] Closed modal")
                             time.sleep(1)
                         except:
                             pass
             except:
                 pass
-
-        # Try to press ESC to close modals
-        try:
-            from selenium.webdriver.common.keys import Keys
-            self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-            print("[INFO] Pressed ESC to close modals")
-            time.sleep(2)
-        except:
-            pass
-
-        # Take screenshot after closing modals
-        self.driver.save_screenshot("after_closing_modals.png")
-        print("[INFO] Screenshot saved: after_closing_modals.png")
-
-        # Wait a bit more for everything to settle
-        time.sleep(3)
 
             # Try multiple selectors for username field
             username_field = None
@@ -217,9 +192,8 @@ class ChessComAccountBot:
 
             for selector in password_selectors:
                 try:
-                    # Wait for presence AND visibility
-                    password_field = WebDriverWait(self.driver, 30).until(
-                        lambda d: d.find_element(*selector).is_displayed() and d.find_element(*selector)
+                    password_field = WebDriverWait(self.driver, 20).until(
+                        EC.presence_of_element_located(selector)
                     )
                     print(f"[INFO] Found password field using selector: {selector}")
                     break
@@ -228,8 +202,6 @@ class ChessComAccountBot:
 
             if not password_field:
                 print("[ERROR] Cannot find password field!")
-                print("[INFO] Taking screenshot for debugging...")
-                self.driver.save_screenshot("password_field_not_found.png")
                 return False
 
             # Scroll to element
@@ -327,242 +299,144 @@ class ChessComAccountBot:
 
         try:
             # Go to play page
-            self.driver.get("https://www.chess.com/play/online")
+            self.driver.get("https://www.chess.com/play")
 
             # Wait for page to load
-            time.sleep(2)
+            time.sleep(5)
 
-            # Click on "Play" button for random opponent
+            # Look for "Play" button
             play_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Play')]"))
+                EC.presence_of_element_located((By.CSS_SELECTOR, "[data-cy='play-button']"))
             )
             play_button.click()
+            print("[OK] Started new game")
 
-            print("[OK] Found a game!")
+            # Wait for game to load
+            time.sleep(5)
+
             return True
 
         except Exception as e:
             print(f"[ERROR] Cannot find game: {e}")
             return False
 
-    def get_current_position(self) -> Position:
-        """Get current position from the board"""
-        try:
-            # This is complex - need to parse the board from HTML
-            # For now, return None (not implemented)
-            return None
-        except Exception as e:
-            print(f"[ERROR] Cannot get position: {e}")
-            return None
+    def get_board_position(self):
+        """Get current board position from chess.com"""
+        # This is a simplified version - you'll need to implement
+        # actual board parsing from chess.com UI
+        return Position()
 
-    def make_move_selenium(self, move: Move) -> bool:
-        """Make a move using Selenium"""
-        try:
-            # Find source and target squares
-            from_sq = move.from_sq
-            to_sq = move.to_sq
-
-            # Click source square
-            source_element = self.driver.find_element(
-                By.XPATH,
-                f"//div[@data-square='{str(from_sq)}']"
-            )
-            source_element.click()
-            time.sleep(random.uniform(0.1, 0.3))
-
-            # Click target square
-            target_element = self.driver.find_element(
-                By.XPATH,
-                f"//div[@data-square='{str(to_sq)}']"
-            )
-            target_element.click()
-
-            print(f"[OK] Made move: {move}")
-            return True
-
-        except NoSuchElementException:
-            print(f"[ERROR] Cannot find squares for move {move}")
-            return False
-        except Exception as e:
-            print(f"[ERROR] Cannot make move: {e}")
-            return False
+    def make_move(self, move: Move):
+        """Make a move on chess.com"""
+        # This is a simplified version - you'll need to implement
+        # actual move making on chess.com UI
+        pass
 
     def play_game(self):
-        """Play a complete game"""
-        print("\n" + "="*60)
-        print("PLAYING GAME")
-        print("="*60)
+        """Play a single game"""
+        print("Playing game...")
 
         try:
-            # Find a game
+            # Find and start game
             if not self.find_game():
                 return False
 
-            # Wait for game to start
-            time.sleep(3)
-
-            # Play loop
+            # Play game loop
             while True:
-                # Check if game is over
-                game_over_element = self.driver.find_elements(By.CLASS_NAME, "game-over-modal")
+                # Get board position
+                pos = self.get_board_position()
 
-                if game_over_element:
-                    print("\nGame over!")
-                    self.analyze_result()
+                # Find best move
+                search = Search(pos)
+                best_move = search.find_best_move(depth=5, time_limit=2.0)
+
+                if best_move:
+                    print(f"Best move: {best_move}")
+                    search_nodes = search.get_nodes_searched()
+                    print(f"Nodes searched: {search_nodes}")
+
+                    # Make move
+                    self.make_move(best_move)
+                else:
+                    print("No legal moves!")
                     break
 
-                # Check if it's our turn
-                # This is complex - need to parse the UI
-                # For now, just wait and check periodically
+                # Wait for opponent
                 time.sleep(2)
-
-                # Get current position (not implemented)
-                position = self.get_current_position()
-
-                if position:
-                    # Find best move
-                    search = Search(position)
-                    best_move = search.find_best_move(depth=5, time_limit=2.0)
-
-                    if best_move:
-                        # Make move
-                        if self.make_move_selenium(best_move):
-                            print(f"Made move: {best_move}")
-                        else:
-                            print("Cannot make move!")
-                    else:
-                        print("No best move found!")
-
-            return True
 
         except Exception as e:
             print(f"[ERROR] Game error: {e}")
             return False
 
-    def analyze_result(self):
-        """Analyze game result"""
+    def run(self, max_games: int = 10):
+        """Run bot for multiple games"""
+        print("=" * 60)
+        print("CHESS.COM ACCOUNT BOT")
+        print("=" * 60)
+        print(f"[INFO] Using account: {self.username}")
+        print(f"[INFO] Max games: {max_games}")
+        print(f"[INFO] Headless: {self.headless}")
+        print()
+
         try:
-            # Get result text
-            result_element = self.driver.find_element(By.CLASS_NAME, "game-over-modal")
-            result_text = result_element.text
+            # Setup driver
+            self.setup_driver()
 
-            print(f"Result: {result_text}")
+            # Login
+            if not self.login():
+                print("[ERROR] Login failed!")
+                return
 
-            # Update stats
-            if "won" in result_text.lower():
-                self.wins += 1
-            elif "lost" in result_text.lower():
-                self.losses += 1
-            else:
-                self.draws += 1
+            # Play games
+            for game_num in range(1, max_games + 1):
+                print(f"\nGame {game_num}/{max_games}")
+                print("-" * 60)
 
-            self.games_played += 1
+                if self.play_game():
+                    self.games_played += 1
+                    print(f"[OK] Game {game_num} completed")
+                else:
+                    print(f"[ERROR] Game {game_num} failed")
 
-            print(f"Stats: {self.wins}W - {self.draws}D - {self.losses}L")
+                # Wait between games
+                if game_num < max_games:
+                    time.sleep(10)
 
-            # Close modal
-            close_button = self.driver.find_element(By.CSS_SELECTOR, "button[aria-label='Close']")
-            close_button.click()
+            # Print stats
+            print("\n" + "=" * 60)
+            print("FINAL STATS")
+            print("=" * 60)
+            print(f"Games played: {self.games_played}")
+            print(f"Wins: {self.wins}")
+            print(f"Draws: {self.draws}")
+            print(f"Losses: {self.losses}")
 
+        except KeyboardInterrupt:
+            print("\n[INFO] Bot stopped by user")
         except Exception as e:
-            print(f"[ERROR] Cannot analyze result: {e}")
-
-    def play_multiple_games(self, max_games: int):
-        """Play multiple games"""
-        print(f"\n{'='*60}")
-        print(f"PLAYING {max_games} GAMES")
-        print(f"{'='*60}")
-
-        for i in range(max_games):
-            print(f"\nGame {i+1}/{max_games}")
-
-            if self.play_game():
-                print(f"\nGame {i+1} completed!")
-            else:
-                print(f"\nGame {i+1} failed!")
-
-            # Wait before next game
-            if i < max_games - 1:
-                print(f"\nWaiting {10} seconds before next game...")
-                time.sleep(10)
-
-        # Print final stats
-        print(f"\n{'='*60}")
-        print(f"SESSION COMPLETED")
-        print(f"{'='*60}")
-        print(f"Games played: {self.games_played}")
-        print(f"Results: {self.wins}W - {self.draws}D - {self.losses}L")
-        win_rate = (self.wins / self.games_played * 100) if self.games_played > 0 else 0
-        print(f"Win rate: {win_rate:.1f}%")
-        print(f"{'='*60}")
-
-    def close(self):
-        """Close browser"""
-        try:
-            if self.driver:
+            print(f"[ERROR] Bot error: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            # Close browser
+            try:
                 self.driver.quit()
                 print("[OK] Browser closed")
-        except Exception as e:
-            print(f"[WARN] Error closing browser: {e}")
-            try:
-                if self.driver:
-                    self.driver.service.stop()
             except:
                 pass
 
 
 def main():
-    """Main function"""
-    print("="*60)
-    print("CHESS.COM ACCOUNT BOT")
-    print("="*60)
-    print("\nWARNING: This violates chess.com TOS!")
-    print("Use at your own risk - account may be banned!")
-    print("="*60)
-
-    # Import config
-    import config_account
-
-    # Get credentials from config
-    username = config_account.CHESSCOM_USERNAME
-    password = config_account.CHESSCOM_PASSWORD
-
-    if not username or not password or username == "your_username":
-        print("[ERROR] Please configure CHESSCOM_USERNAME and CHESSCOM_PASSWORD in config_account.py!")
-        return
-
-    print(f"\n[INFO] Using account: {username}")
-
-    # Configure
-    headless = config_account.HEADLESS
-    max_games = config_account.MAX_GAMES_PER_SESSION
-
-    print(f"[INFO] Max games: {max_games}")
-    print(f"[INFO] Headless: {headless}")
-
+    """Main entry point"""
     # Create bot
-    bot = ChessComAccountBot(username, password, headless)
+    bot = ChessComAccountBot(
+        username=config_account.CHESSCOM_USERNAME,
+        password=config_account.CHESSCOM_PASSWORD,
+        headless=False
+    )
 
-    try:
-        # Setup
-        bot.setup_driver()
-
-        # Login
-        if not bot.login():
-            print("[ERROR] Login failed!")
-            return
-
-        # Play games
-        bot.play_multiple_games(max_games=max_games)
-
-    except KeyboardInterrupt:
-        print("\n\n[STOP] Bot stopped by user")
-
-    except Exception as e:
-        print(f"\n[ERROR] Bot error: {e}")
-
-    finally:
-        bot.close()
+    # Run bot
+    bot.run(max_games=10)
 
 
 if __name__ == "__main__":
