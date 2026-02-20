@@ -90,9 +90,10 @@ class MoveGenerator:
                 else:
                     moves.append(Move(square, forward_sq))
 
-                    # Double push
+                    # Double push (check if pawn is on starting rank)
+                    current_rank = square.rank()
                     start_rank = 1 if piece.color == Color.WHITE else 6
-                    if rank == start_rank:
+                    if current_rank == start_rank:
                         double_sq = Square(forward_sq.value + direction * 8)
                         if self.position.get_piece(double_sq) is None:
                             moves.append(Move(square, double_sq, MoveFlag.DOUBLE_PAWN))
